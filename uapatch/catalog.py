@@ -15,13 +15,14 @@ catalog.json (format 1):
       "cover": "covers/nsmbw.png",         optional, relative to the catalog
       "status": "beta",                    optional badge: "wip" (У РОБОТІ), "beta" (БЕТА), "done" (ЗАВЕРШЕНО)
       "contact": "https://...",            optional, overrides the catalog-wide "contact" link
+      "gametdb": "SMNP01",                 optional: whose box art to show (default: the first disc)
       "discs": [
         {"game": "SMNP01", "region": "Європа", "note": "Rev 2",
          "patch": "patches/nsmbw_SMNP01_0.9.uapatch", "sha256": "...", "size": 252016}
       ]
     },
     {                                      a translation still in work: no version, no discs
-      "id": "kirby", "title": "...", "status": "wip", "cover": "covers/kirby.png",
+      "id": "kirby", "title": "...", "status": "wip", "gametdb": "SUKE01",
       "wip": {"progress": 30, "eta": "Кінець листопада 2026", "updated": "2026-11-15",
               "done": ["..."], "todo": ["..."], "notes": "..."}
     }
@@ -80,6 +81,41 @@ def _open(src):
         raise PatchError(f'Не вдалося відкрити {src}: {e}')
 
 
+GAMETDB = 'https://art.gametdb.com/wii'
+COVER_LIMIT = 4 << 20
+
+
+def _regions(gid):
+    """GameTDB cover folders for a disc ID6, best first (the 4th letter is the region)."""
+    first = {'E': 'US', 'J': 'JA', 'K': 'KO', 'D': 'DE', 'F': 'FR', 'S': 'ES', 'I': 'IT',
+             'H': 'NL'}.get(gid[3:4], 'EN')
+    return [first] + [r for r in ('EN', 'US') if r != first]
+
+
+def _cached(url):
+    """Download a picture once into the cache -> its local path, or None if it is not there."""
+    import hashlib
+    local = os.path.join(cache_dir(), 'cover_' + hashlib.sha256(url.encode()).hexdigest()[:16] + '.png')
+    missing = local + '.none'
+    if os.path.exists(local):
+        return local
+    if os.path.exists(missing):  # GameTDB had no such picture: do not ask again on every start
+        return None
+    try:
+        with _open(url) as f:
+            data = f.read(COVER_LIMIT + 1)
+    except PatchError as e:
+        if '404' in str(e):
+            open(missing, 'w').close()
+        return None
+    if len(data) > COVER_LIMIT or not data.startswith((b'\x89PNG', b'\xff\xd8')):
+        return None
+    with open(local + '.part', 'wb') as out:
+        out.write(data)
+    os.replace(local + '.part', local)
+    return local
+
+
 class Catalog:
     def __init__(self, source):
         """source: a URL (https) or a local path to catalog.json."""
@@ -106,24 +142,30 @@ class Catalog:
     def cover(self, game):
         return _resolve(self.source, game['cover']) if game.get('cover') else None
 
-    def fetch_cover(self, game, limit=4 << 20):
-        """-> local path of the game's cover picture (downloaded once into the cache), or None."""
+    def cover_id(self, game):
+        """The disc ID6 whose box art GameTDB shows: "gametdb" in the catalog, else the first disc."""
+        return game.get('gametdb') or next((d['game'] for d in game.get('discs', [])), None)
+
+    def fetch_cover(self, game):
+        """-> (local path, kind) of the game's cover, or (None, None).
+
+        kind "full": a GameTDB scan of the whole case (back, spine, front), the window shows its
+        right part; kind "front": just the front. Box art is not kept in the repository: it is
+        downloaded from GameTDB by the disc ID, like Dolphin does, and cached. A "cover" picture in
+        the catalog is the fallback (our own art, for a game GameTDB does not have).
+        """
+        gid = self.cover_id(game)
+        if gid:
+            for region in _regions(gid):
+                for kind, folder in (('full', 'coverfullHQ'), ('front', 'cover')):
+                    path = _cached(f'{GAMETDB}/{folder}/{region}/{gid}.png')
+                    if path:
+                        return path, kind
         src = self.cover(game)
-        if not src:
-            return None
-        if not _is_url(src):
-            return src if os.path.exists(src) else None
-        import hashlib
-        local = os.path.join(cache_dir(), 'cover_' + hashlib.sha256(src.encode()).hexdigest()[:16] + '.png')
-        if not os.path.exists(local):
-            with _open(src) as f:
-                data = f.read(limit + 1)
-            if len(data) > limit:
-                raise PatchError('Обкладинка завелика.')
-            with open(local + '.part', 'wb') as out:
-                out.write(data)
-            os.replace(local + '.part', local)
-        return local
+        if src and not _is_url(src):
+            return (src, 'front') if os.path.exists(src) else (None, None)
+        path = _cached(src) if src else None
+        return (path, 'front') if path else (None, None)
 
     def fetch_patch(self, disc, progress=lambda done, total: None):
         """-> local path of the disc's patch, downloaded if needed and checked by SHA-256."""

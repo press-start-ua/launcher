@@ -11,6 +11,7 @@
 |---|---|---|---|
 | New Super Mario Bros. Wii | SMNP01 (Європа, Rev 2) | 0.9 | бета |
 | Donkey Kong Jungle Beat | R49E01 (США), R49P01 (Європа) | 1.1 | завершено |
+| LEGO Batman: The Videogame | — | — | у роботі |
 
 Актуальний список завжди в [catalog/catalog.json](catalog/catalog.json): програма читає його звідси
 під час запуску.
@@ -63,7 +64,7 @@ python3 cli.py patch "Моя гра.iso" -f wbfs
 | `uapatch/` | рушій: формат патча, застосування через wit, список перекладів |
 | `catalog/` | список перекладів, патчі, обкладинки |
 | `tools/import_patch.py` | додати новий переклад або версію до списку |
-| `tools/make_cover.py` | зробити обкладинку з українського логотипа гри |
+| `tools/make_cover.py` | зробити обкладинку з українського логотипа гри (якщо немає скану коробки) |
 | `wit/` | Wiimms ISO Tools для macOS, Windows, Linux |
 | `fonts/` | шрифт Nunito для обкладинок |
 

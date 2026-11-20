@@ -60,7 +60,8 @@ def about(app, version):
 <li><b>Wiimms ISO Tools (wit)</b> — робота з образами Wii, ліцензія GNU GPL v2, wit.wiimm.de</li>
 <li><b>Qt for Python (PySide6)</b> — вікно програми, ліцензія GNU LGPL v3</li>
 <li><b>Python</b> — ліцензія Python Software Foundation</li>
-<li><b>Nunito</b> — шрифт на обкладинках, SIL Open Font License 1.1</li>
+<li><b>GameTDB</b> — обкладинки ігор завантажуються з gametdb.com за кодом диска</li>
+<li><b>Nunito</b> — шрифт на власних обкладинках (make_cover.py), SIL Open Font License 1.1</li>
 </ul>
 <p class="meta">Шрифти, використані в самих перекладах, перелічені в README кожного перекладу.
 Усі вони вільні (SIL Open Font License).</p>

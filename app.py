@@ -37,8 +37,9 @@ DEFAULT_CATALOG = os.environ.get('UAPATCH_CATALOG') or ONLINE_CATALOG
 IMAGES = 'Образи Wii (*.iso *.wbfs *.ciso *.wdf *.wia *.gcz);;Усі файли (*)'
 FORMATS = [('iso', 'ISO', 'для Dolphin'), ('wbfs', 'WBFS', 'для Wii через USB-завантажувач'),
            ('riivolution', 'Riivolution', 'для Wii з оригінальним диском (SD-картка)')]
-COVER_MIN, COVER_MAX, COVER_DEFAULT = 140, 300, 210   # cover width on the shelf (height = 4/3)
-BIG = QSize(240, 320)       # on the game page
+COVER_MIN, COVER_MAX, COVER_DEFAULT = 140, 300, 200   # cover width on the shelf
+COVER_RATIO = 1.4    # height / width of a Wii case front (scans are about 1:1.41)
+BIG = QSize(240, 336)       # on the game page
 
 STYLE = '''
 QMainWindow, QWidget#root, QWidget#page { background: #f4f1ea; }
@@ -165,7 +166,7 @@ def shelf_note(g):
 
 
 def with_badge(pm, status):
-    """The translation's status as a pill in the top-right corner of a cover."""
+    """The translation's status as a pill in the top-left corner of a cover."""
     if status not in STATUS:
         return pm
     text, color = STATUS[status]
@@ -181,7 +182,7 @@ def with_badge(pm, status):
     pad_x, pad_y = f.pixelSize() * 0.75, f.pixelSize() * 0.4
     w, h = fm.horizontalAdvance(text) + 2 * pad_x, fm.height() + 2 * pad_y
     m = pm.width() * 0.05
-    rect = QRectF(pm.width() - m - w, m, w, h)
+    rect = QRectF(m, m, w, h)   # top left: the right corner holds the Wii logo on the cases
     p.setPen(Qt.NoPen)
     p.setBrush(QColor(0, 0, 0, 60))
     p.drawRoundedRect(rect.translated(0, 2), h / 2, h / 2)
@@ -193,10 +194,21 @@ def with_badge(pm, status):
     return pm
 
 
-def rounded(path, size, radius=14):
-    """The cover file scaled into size with rounded corners (None if it cannot be read)."""
+def load_cover(path, kind):
+    """A cover file -> QPixmap of the case front (None if it cannot be read). A GameTDB «full» scan
+    is the whole case laid flat, back | spine | front: the front is its right part."""
     src = QPixmap(path)
     if src.isNull():
+        return None
+    if kind == 'full':
+        w = min(src.width(), round(src.height() / COVER_RATIO))
+        src = src.copy(src.width() - w, 0, w, src.height())
+    return src
+
+
+def rounded(src, size, radius=14):
+    """A cover picture scaled into size with rounded corners (None without a picture)."""
+    if src is None:
         return None
     src = src.scaled(size, Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
     pm = QPixmap(size)
@@ -298,7 +310,7 @@ class Window(QMainWindow):
         self._jobs = []
         self.source = source
         self.catalog = None
-        self.covers = {}        # game id -> local cover path
+        self.covers = {}        # game id -> QPixmap of the case front
         self.game_row = -1      # the game shown on the game page
         self.image = None
         self.image_id = None
@@ -325,7 +337,7 @@ class Window(QMainWindow):
             return default
 
     def cover_size(self):
-        return QSize(self.cover_w, self.cover_w * 4 // 3)
+        return QSize(self.cover_w, round(self.cover_w * COVER_RATIO))
 
     # -------------------------------------------------------------- toolbar
 
@@ -407,8 +419,7 @@ class Window(QMainWindow):
             for i in range(self.shelf.count()):
                 it = self.shelf.item(i)
                 g = self.catalog.games[it.data(Qt.UserRole)]
-                path = self.covers.get(g['id'])
-                pm = (rounded(path, size) if path else None) or placeholder(g['title'], size)
+                pm = rounded(self.covers.get(g['id']), size) or placeholder(g['title'], size)
                 it.setIcon(QIcon(with_badge(pm, g.get('status'))))
 
     # -------------------------------------------------------------- pages
@@ -678,7 +689,7 @@ class Window(QMainWindow):
         def cache_files():
             base = cache_dir()
             return [os.path.join(base, n) for n in os.listdir(base)
-                    if n.endswith(('.uapatch', '.part', '.png'))]
+                    if n.endswith(('.uapatch', '.part', '.png', '.none'))]
 
         def show_cache():
             files = cache_files()
@@ -778,7 +789,10 @@ class Window(QMainWindow):
               self.on_covers, lambda msg: None)
 
     def on_covers(self, paths):
-        self.covers.update({k: v for k, v in paths.items() if v})
+        for gid, (path, kind) in paths.items():
+            pm = load_cover(path, kind) if path else None
+            if pm:
+                self.covers[gid] = pm
         self.apply_cover_size()
         if self.game_row >= 0:
             self.show_game(self.game_row)
@@ -811,8 +825,7 @@ class Window(QMainWindow):
         g = self.current_game()
         if not g:
             return
-        path = self.covers.get(g['id'])
-        pm = (rounded(path, BIG) if path else None) or placeholder(g['title'], BIG)
+        pm = rounded(self.covers.get(g['id']), BIG) or placeholder(g['title'], BIG)
         self.cover.setPixmap(with_badge(pm, g.get('status')))
         self.title.setText(g['title'])
         wip = is_wip(g)
