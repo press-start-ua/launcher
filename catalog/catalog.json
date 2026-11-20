@@ -52,8 +52,17 @@
       "date": "2026-11-12",
       "cover": "covers/dkjb.png",
       "status": "done"
+    },
+    {
+      "id": "legobatman",
+      "title": "LEGO Batman: The Videogame",
+      "platform": "Wii",
+      "status": "wip",
+      "wip": {
+        "updated": "2026-11-20"
+      }
     }
   ],
-  "updated": "2026-11-18",
+  "updated": "2026-11-20",
   "contact": "mailto:press.start.ukraine@gmail.com"
 }

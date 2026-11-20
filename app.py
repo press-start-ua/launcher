@@ -842,6 +842,8 @@ class Window(QMainWindow):
                              if info.get('eta') else '')
         self.wip_updated.setText(f'<span style="color:#7a6f60">Оновлено</span>&nbsp; '
                                  f'<b>{esc(nice_date(info.get("updated")))}</b>' if info.get('updated') else '')
+        self.wip_eta.setVisible(bool(info.get('eta')))
+        self.wip_updated.setVisible(bool(info.get('updated')))
         for key, h, text in self.wip_sections:
             value = info.get(key)
             text.setText(bullets(value) if isinstance(value, list) else esc(value or '').replace('\n', '<br>'))
