@@ -1,0 +1,58 @@
+{
+  "format": 1,
+  "games": [
+    {
+      "id": "nsmbw",
+      "title": "New Super Mario Bros. Wii",
+      "platform": "Wii",
+      "discs": [
+        {
+          "game": "SMNP01",
+          "region": "Європа",
+          "note": "Rev 2",
+          "patch": "patches/nsmbw_SMNP01_0.9.uapatch",
+          "sha256": "b3229e0c1924a5059133348417f6ef6178deeaf2c6ed84142bd45671611b5b86",
+          "size": 252160
+        }
+      ],
+      "changes": [
+        "Перша тестова версія: увесь текст, шрифти, логотип, банери, екран про ремінець"
+      ],
+      "version": "0.9",
+      "date": "2026-11-17",
+      "cover": "covers/nsmbw.png",
+      "status": "beta"
+    },
+    {
+      "id": "dkjb",
+      "title": "Donkey Kong Jungle Beat",
+      "platform": "Wii",
+      "discs": [
+        {
+          "game": "R49E01",
+          "region": "США",
+          "note": "",
+          "patch": "patches/dkjb_R49E01_1.1.uapatch",
+          "sha256": "e34acb6d4555dee911bbb17a0424a66e219a3358f6a8c29bea6e632e446bb85f",
+          "size": 245687
+        },
+        {
+          "game": "R49P01",
+          "region": "Європа",
+          "note": "",
+          "patch": "patches/dkjb_R49P01_1.1.uapatch",
+          "sha256": "2f6a2cd9a05924c1eb5b03f002bded2352fa62499556e6121bf4710973b3fe7e",
+          "size": 245646
+        }
+      ],
+      "changes": [
+        "Нові імена босів і назва «Сніжний пік» за вичиткою"
+      ],
+      "version": "1.1",
+      "date": "2026-11-12",
+      "cover": "covers/dkjb.png",
+      "status": "done"
+    }
+  ],
+  "updated": "2026-11-18"
+}
