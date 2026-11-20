@@ -13,6 +13,53 @@ sys.dont_write_bytecode = True
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
+
+def _log_path():
+    """crash.log: in «data» beside the exe of the portable build, else in the temp folder."""
+    import tempfile
+    if getattr(sys, 'frozen', False):
+        folder = os.path.join(os.path.dirname(os.path.abspath(sys.executable)), 'data')
+        try:
+            os.makedirs(folder, exist_ok=True)
+            return os.path.join(folder, 'crash.log')
+        except OSError:
+            pass
+    return os.path.join(tempfile.gettempdir(), 'PressStartUA_crash.log')
+
+
+LOG = _log_path()
+
+
+def _report(text):
+    """Write an error into crash.log and show it: a windowed exe has no console to print to."""
+    try:
+        with open(LOG, 'a', encoding='utf-8') as f:
+            f.write(text + '\n')
+    except OSError:
+        pass
+    if os.name == 'nt':
+        try:
+            import ctypes
+            ctypes.windll.user32.MessageBoxW(None, text[-1500:] + f'\n\nЖурнал: {LOG}',
+                                             'Press Start UA Launcher — помилка', 0x10)
+        except Exception:
+            pass
+
+
+def _excepthook(kind, value, tb):
+    _report('Помилка:\n' + ''.join(traceback.format_exception(kind, value, tb)))
+
+
+sys.excepthook = _excepthook
+if sys.stdout is None:  # a windowed exe has no console
+    sys.stdout = sys.stderr = open(os.devnull, 'w')
+try:  # native crashes (inside Qt) leave their trace in the log too
+    import faulthandler
+    _fault_file = open(LOG, 'a', encoding='utf-8')
+    faulthandler.enable(_fault_file)
+except Exception:
+    pass
+
 from PySide6.QtCore import QByteArray, QObject, QRectF, QSettings, QSize, Qt, QThread, QUrl, Signal
 from PySide6.QtGui import QAction, QColor, QDesktopServices, QFont, QIcon, QPainter, QPainterPath, QPixmap
 from PySide6.QtSvg import QSvgRenderer
@@ -1001,6 +1048,15 @@ def main():
     source = DEFAULT_CATALOG
     if '--catalog' in sys.argv:
         source = sys.argv[sys.argv.index('--catalog') + 1]
+    from PySide6.QtCore import QTimer, qInstallMessageHandler
+
+    def qt_message(mode, context, message):  # Qt's own warnings (missing plugins…) into the log
+        try:
+            with open(LOG, 'a', encoding='utf-8') as f:
+                f.write(f'Qt: {message}\n')
+        except OSError:
+            pass
+    qInstallMessageHandler(qt_message)
     app = QApplication(sys.argv)
     app.setApplicationName(APP)
     icon_file = os.path.join(getattr(sys, '_MEIPASS', HERE), 'assets', 'icon.png')
@@ -1009,7 +1065,12 @@ def main():
     app.setStyleSheet(STYLE)
     w = Window(source)
     w.show()
+    if '--selftest' in sys.argv:  # build check: open the window, then quit and report
+        QTimer.singleShot(4000, app.quit)
     code = app.exec()
+    if '--selftest' in sys.argv:
+        with open(LOG, 'a', encoding='utf-8') as f:
+            f.write(f'selftest ok: {len(w.catalog.games) if w.catalog else 0} games\n')
     # a background download or patch may still run: leave at once instead of waiting for it
     # (Qt aborts when a running QThread is destroyed at exit)
     sys.stdout.flush()
