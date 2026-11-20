@@ -33,6 +33,9 @@ def main():
     if a.cmd == 'list':
         print(f'Каталог від {cat.updated}')
         for g in cat.games:
+            if g.get('status') == 'wip':
+                print(f'- {g["title"]}: переклад у роботі')
+                continue
             discs = ', '.join(f'{d["game"]} ({d["region"]}{", " + d["note"] if d.get("note") else ""})'
                               for d in g['discs'])
             print(f'- {g["title"]}: версія {g["version"]} від {g["date"]}; диски: {discs}')

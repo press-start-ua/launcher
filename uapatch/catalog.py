@@ -13,13 +13,20 @@ catalog.json (format 1):
       "date": "2026-11-17",
       "changes": ["...", "..."],           what is new in this version, newest first
       "cover": "covers/nsmbw.png",         optional, relative to the catalog
-      "status": "beta",                    optional badge: "beta" (БЕТА) or "done" (ЗАВЕРШЕНО)
+      "status": "beta",                    optional badge: "wip" (У РОБОТІ), "beta" (БЕТА), "done" (ЗАВЕРШЕНО)
+      "contact": "https://...",            optional, overrides the catalog-wide "contact" link
       "discs": [
         {"game": "SMNP01", "region": "Європа", "note": "Rev 2",
          "patch": "patches/nsmbw_SMNP01_0.9.uapatch", "sha256": "...", "size": 252016}
       ]
+    },
+    {                                      a translation still in work: no version, no discs
+      "id": "kirby", "title": "...", "status": "wip", "cover": "covers/kirby.png",
+      "wip": {"progress": 30, "eta": "Кінець листопада 2026", "updated": "2026-11-15",
+              "done": ["..."], "todo": ["..."], "notes": "..."}
     }
-  ]
+  ],
+  "contact": "mailto:press.start.ukraine@gmail.com"   «Зв'язатися з автором» (https or mailto)
 }
 
 Paths are relative to the catalog, so the same catalog works from a local folder and from the
@@ -83,6 +90,7 @@ class Catalog:
             raise PatchError('Каталог новішого формату. Оновіть програму.')
         self.updated = data.get('updated', '')
         self.games = data.get('games', [])
+        self.contact = data.get('contact', '')   # https or mailto link for «Зв'язатися з автором»
 
     def game(self, gid):
         return next((g for g in self.games if g['id'] == gid), None)
@@ -90,7 +98,7 @@ class Catalog:
     def find_disc(self, game_id6):
         """-> (game, disc) for a disc ID6, or (None, None)."""
         for g in self.games:
-            for d in g['discs']:
+            for d in g.get('discs', []):
                 if d['game'] == game_id6:
                     return g, d
         return None, None

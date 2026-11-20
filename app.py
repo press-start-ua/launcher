@@ -53,6 +53,10 @@ QListWidget#shelf::item { color: #2b2620; border-radius: 12px; padding: 8px; }
 QListWidget#shelf::item:hover { background: #ebe4d6; }
 QListWidget#shelf::item:selected { background: #e2d9c7; color: #2b2620; }
 QFrame#card { background: #fffdf8; border: 1px solid #e0d8c8; border-radius: 12px; }
+QLabel#wiptitle { font-size: 20px; font-weight: 700; color: #2b2620; }
+QLabel#pct { font-size: 15px; font-weight: 700; color: #4a6fa5; min-width: 44px; }
+QProgressBar#wipbar { background: #e7e0d2; border-radius: 6px; height: 12px; }
+QProgressBar#wipbar::chunk { background: #4a6fa5; border-radius: 6px; }
 QLabel#title { font-size: 26px; font-weight: 700; color: #2b2620; }
 QLabel#meta { color: #7a6f60; font-size: 13px; }
 QLabel#h { font-size: 13px; font-weight: 700; color: #7a6f60; letter-spacing: 1px; }
@@ -126,7 +130,38 @@ def placeholder(title, size):
     return pm
 
 
-STATUS = {'beta': ('БЕТА', '#d9822b'), 'done': ('ЗАВЕРШЕНО', '#2f6f4f')}
+STATUS = {'wip': ('У РОБОТІ', '#4a6fa5'), 'beta': ('БЕТА', '#d9822b'), 'done': ('ЗАВЕРШЕНО', '#2f6f4f')}
+MONTHS = ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня', 'липня', 'серпня', 'вересня',
+          'жовтня', 'листопада', 'грудня']
+CONTACT_SCHEMES = ('https', 'mailto')   # a link from the catalog opens only these
+
+
+def nice_date(iso):
+    """2026-11-15 -> 15 листопада 2026 (anything else as it is)."""
+    try:
+        y, m, d = (int(x) for x in iso.split('-'))
+        return f'{d} {MONTHS[m - 1]} {y}'
+    except (ValueError, IndexError, AttributeError):
+        return iso or '—'
+
+
+def esc(text):
+    return str(text).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+
+
+def bullets(items):
+    return '<br>'.join('• ' + esc(c) for c in items)
+
+
+def is_wip(g):
+    return g.get('status') == 'wip'
+
+
+def shelf_note(g):
+    if is_wip(g):
+        pct = (g.get('wip') or {}).get('progress')
+        return 'у роботі' + (f' · {pct}%' if pct is not None else '')
+    return f'версія {g.get("version", "—")}'
 
 
 def with_badge(pm, status):
@@ -439,14 +474,16 @@ class Window(QMainWindow):
         self.meta.setFixedWidth(BIG.width())
         left.addWidget(self.meta)
         left.addSpacing(4)
-        left.addWidget(QLabel('ЩО НОВОГО', objectName='h'))
+        self.h_changes = QLabel('ЩО НОВОГО', objectName='h')
+        left.addWidget(self.h_changes)
         self.changes = QLabel('', objectName='body')
         self.changes.setWordWrap(True)
         self.changes.setFixedWidth(BIG.width())
         self.changes.setTextFormat(Qt.RichText)
         left.addWidget(self.changes)
         left.addSpacing(4)
-        left.addWidget(QLabel('ДИСКИ', objectName='h'))
+        self.h_discs = QLabel('ДИСКИ', objectName='h')
+        left.addWidget(self.h_discs)
         self.discs = QLabel('', objectName='body')
         self.discs.setWordWrap(True)
         self.discs.setFixedWidth(BIG.width())
@@ -503,8 +540,72 @@ class Window(QMainWindow):
         self.logbox.setPlaceholderText('Тут буде видно, що робить програма.')
         self.logbox.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         pl.addWidget(self.logbox, 1)
-        body.addWidget(panel, 1)
+        self.right = QStackedWidget()
+        self.right.addWidget(panel)
+        self.right.addWidget(self.build_wip())
+        body.addWidget(self.right, 1)
         return page
+
+    def build_wip(self):
+        """The right side for a translation still in work: progress, dates, what is done, notes."""
+        card = QFrame(objectName='card')
+        lay = QVBoxLayout(card)
+        lay.setContentsMargins(24, 22, 24, 22)
+        lay.setSpacing(10)
+        lay.addWidget(QLabel('Переклад у роботі', objectName='wiptitle'))
+
+        prow = QHBoxLayout()
+        self.wip_bar = QProgressBar(objectName='wipbar')
+        self.wip_bar.setTextVisible(False)
+        self.wip_bar.setRange(0, 100)
+        prow.addWidget(self.wip_bar, 1)
+        self.wip_pct = QLabel('', objectName='pct')
+        prow.addWidget(self.wip_pct)
+        self.wip_prow = QWidget()
+        self.wip_prow.setLayout(prow)
+        lay.addWidget(self.wip_prow)
+
+        dates = QHBoxLayout()
+        dates.setSpacing(28)
+        self.wip_eta = QLabel('', objectName='body')
+        self.wip_updated = QLabel('', objectName='body')
+        dates.addWidget(self.wip_eta)
+        dates.addWidget(self.wip_updated)
+        dates.addStretch(1)
+        lay.addLayout(dates)
+        lay.addSpacing(6)
+
+        self.wip_sections = []
+        for key, head in (('done', 'ЩО ВЖЕ ЗРОБЛЕНО'), ('todo', 'ЩО ЗАЛИШИЛОСЬ'), ('notes', 'НОТАТКИ')):
+            h = QLabel(head, objectName='h')
+            text = QLabel('', objectName='body')
+            text.setWordWrap(True)
+            text.setTextFormat(Qt.RichText)
+            lay.addWidget(h)
+            lay.addWidget(text)
+            lay.addSpacing(4)
+            self.wip_sections.append((key, h, text))
+
+        self.wip_contact = QPushButton('✉  Зв\'язатися з автором')
+        self.wip_contact.setCursor(Qt.PointingHandCursor)
+        self.wip_contact.clicked.connect(self.contact_author)
+        lay.addWidget(self.wip_contact, 0, Qt.AlignLeft)
+        lay.addStretch(1)
+        hint = QLabel('Коли переклад вийде, тут з\'явиться кнопка «Перекласти». '
+                      'Натисніть «Оновити» вгорі, щоб перевірити.', objectName='meta')
+        hint.setWordWrap(True)
+        lay.addWidget(hint)
+        return card
+
+    def contact_link(self, g):
+        link = (g or {}).get('contact') or (self.catalog.contact if self.catalog else '')
+        url = QUrl(link or '')
+        return url if url.isValid() and url.scheme() in CONTACT_SCHEMES else None
+
+    def contact_author(self):
+        url = self.contact_link(self.current_game())
+        if url:
+            QDesktopServices.openUrl(url)
 
     def show_library(self):
         if self.busy:
@@ -663,10 +764,11 @@ class Window(QMainWindow):
         for i, g in enumerate(self.catalog.games):
             it = QListWidgetItem(QIcon(with_badge(placeholder(g['title'], self.cover_size()), g.get('status'))),
                                  g['title'])
-            it.setData(Qt.UserRole + 1, f'версія {g["version"]}')
+            it.setData(Qt.UserRole + 1, shelf_note(g))
             it.setData(Qt.UserRole, i)
             it.setTextAlignment(Qt.AlignHCenter | Qt.AlignTop)
-            it.setToolTip(f'{g["title"]}\nПереклад версії {g["version"]} від {g["date"]}')
+            it.setToolTip(f'{g["title"]}\nПереклад у роботі' if is_wip(g) else
+                          f'{g["title"]}\nПереклад версії {g["version"]} від {nice_date(g.get("date"))}')
             self.shelf.addItem(it)
         self.cat_info.setText(f'Список від {self.catalog.updated}' +
                               (' (без з\'єднання: вбудований)' if offline else ''))
@@ -713,11 +815,39 @@ class Window(QMainWindow):
         pm = (rounded(path, BIG) if path else None) or placeholder(g['title'], BIG)
         self.cover.setPixmap(with_badge(pm, g.get('status')))
         self.title.setText(g['title'])
-        self.meta.setText(f'{g.get("platform", "Wii")} · переклад версії {g["version"]} від {g["date"]}')
-        ch = g.get('changes') or ['—']
-        self.changes.setText('<br>'.join('• ' + c.replace('&', '&amp;').replace('<', '&lt;') for c in ch))
+        wip = is_wip(g)
+        platform = g.get('platform', 'Wii')
+        self.meta.setText(f'{platform} · переклад у роботі' if wip else
+                          f'{platform} · переклад версії {g["version"]} від {nice_date(g.get("date"))}')
+        self.changes.setText(bullets(g.get('changes') or ['—']))
+        discs = g.get('discs', [])
         self.discs.setText('\n'.join(
-            f'{d["game"]} — {d["region"]}' + (f' ({d["note"]})' if d.get('note') else '') for d in g['discs']))
+            f'{d["game"]} — {d["region"]}' + (f' ({d["note"]})' if d.get('note') else '') for d in discs))
+        for w in (self.h_changes, self.changes):
+            w.setVisible(not wip)
+        for w in (self.h_discs, self.discs):
+            w.setVisible(bool(discs) and not wip)
+        self.right.setCurrentIndex(1 if wip else 0)
+        if wip:
+            self.show_wip(g)
+
+    def show_wip(self, g):
+        info = g.get('wip') or {}
+        pct = info.get('progress')
+        self.wip_prow.setVisible(pct is not None)
+        if pct is not None:
+            self.wip_bar.setValue(max(0, min(100, int(pct))))
+            self.wip_pct.setText(f'{int(pct)}%')
+        self.wip_eta.setText(f'<span style="color:#7a6f60">Орієнтовно</span>&nbsp; <b>{esc(info["eta"])}</b>'
+                             if info.get('eta') else '')
+        self.wip_updated.setText(f'<span style="color:#7a6f60">Оновлено</span>&nbsp; '
+                                 f'<b>{esc(nice_date(info.get("updated")))}</b>' if info.get('updated') else '')
+        for key, h, text in self.wip_sections:
+            value = info.get(key)
+            text.setText(bullets(value) if isinstance(value, list) else esc(value or '').replace('\n', '<br>'))
+            h.setVisible(bool(value))
+            text.setVisible(bool(value))
+        self.wip_contact.setVisible(self.contact_link(g) is not None)
 
     # -------------------------------------------------------------- image
 
