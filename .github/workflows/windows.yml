@@ -22,46 +22,11 @@ jobs:
           python-version: '3.12'
 
       - name: Install build tools
-        run: python -m pip install PySide6-Essentials==6.10.3 pyinstaller==6.11.1
+        run: python -m pip install -r packaging/requirements-build.txt
 
-      - name: Build
+      - name: Build and test (packaging/build_windows.ps1)
         shell: pwsh
-        run: |
-          $version = (Select-String -Path app.py -Pattern "^VERSION = '(.+)'").Matches[0].Groups[1].Value
-          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
-          pyinstaller --noconfirm --clean --windowed --onedir `
-            --name "Press Start UA Launcher" `
-            --icon assets/icon.ico `
-            --add-data "assets/icon.png;assets" `
-            --add-data "catalog;catalog" `
-            --add-data "wit/windows;wit/windows" `
-            --add-data "wit/gpl-2.0.txt;wit" `
-            --add-data "wit/README.txt;wit" `
-            --exclude-module tkinter `
-            app.py
-          $out = "dist/Press Start UA Launcher"
-          Copy-Item packaging/README_Windows.txt "$out/README.txt"
-          Copy-Item LICENSE "$out/LICENSE.txt"
-          New-Item -ItemType Directory -Force -Path "$out/data" | Out-Null
-
-      - name: Smoke test (the exe really starts, opens its window and quits)
-        shell: pwsh
-        run: |
-          $dir = "dist/Press Start UA Launcher"
-          if (!(Test-Path "$dir/_internal/wit/windows/wit.exe")) { throw "no wit" }
-          & "$dir/_internal/wit/windows/wit.exe" --version
-          $p = Start-Process -FilePath "$dir/Press Start UA Launcher.exe" -ArgumentList "--selftest" -PassThru
-          if (!$p.WaitForExit(60000)) { $p.Kill(); Write-Host "the exe hung" }
-          Write-Host "exit code: $($p.ExitCode)"
-          if (Test-Path "$dir/data/crash.log") { Get-Content "$dir/data/crash.log" } else { Write-Host "no crash.log" }
-          if (!(Select-String -Path "$dir/data/crash.log" -Pattern "selftest ok" -Quiet)) { throw "the exe did not start" }
-          Remove-Item "$dir/data/*" -Recurse -Force
-
-      - name: Zip
-        shell: pwsh
-        run: |
-          New-Item -ItemType File -Force -Path "dist/Press Start UA Launcher/data/.keep" | Out-Null
-          Compress-Archive -Path "dist/Press Start UA Launcher" -DestinationPath "PressStartUA_Launcher_Windows_${{ env.VERSION }}.zip"
+        run: ./packaging/build_windows.ps1
 
       - uses: actions/upload-artifact@v4
         with:
