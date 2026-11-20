@@ -43,20 +43,30 @@ jobs:
           Copy-Item packaging/README_Windows.txt "$out/README.txt"
           Copy-Item LICENSE "$out/LICENSE.txt"
           New-Item -ItemType Directory -Force -Path "$out/data" | Out-Null
-          Compress-Archive -Path $out -DestinationPath "PressStartUA_Launcher_Windows_$version.zip"
 
-      - name: Smoke test (the exe starts and the engine finds wit)
+      - name: Smoke test (the exe really starts, opens its window and quits)
         shell: pwsh
         run: |
-          $exe = "dist/Press Start UA Launcher/Press Start UA Launcher.exe"
-          if (!(Test-Path $exe)) { throw "no exe" }
-          if (!(Test-Path "dist/Press Start UA Launcher/_internal/wit/windows/wit.exe")) { throw "no wit" }
-          & "dist/Press Start UA Launcher/_internal/wit/windows/wit.exe" --version
+          $dir = "dist/Press Start UA Launcher"
+          if (!(Test-Path "$dir/_internal/wit/windows/wit.exe")) { throw "no wit" }
+          & "$dir/_internal/wit/windows/wit.exe" --version
+          $p = Start-Process -FilePath "$dir/Press Start UA Launcher.exe" -ArgumentList "--selftest" -PassThru
+          if (!$p.WaitForExit(60000)) { $p.Kill(); Write-Host "the exe hung" }
+          Write-Host "exit code: $($p.ExitCode)"
+          if (Test-Path "$dir/data/crash.log") { Get-Content "$dir/data/crash.log" } else { Write-Host "no crash.log" }
+          if (!(Select-String -Path "$dir/data/crash.log" -Pattern "selftest ok" -Quiet)) { throw "the exe did not start" }
+          Remove-Item "$dir/data/*" -Recurse -Force
+
+      - name: Zip
+        shell: pwsh
+        run: |
+          New-Item -ItemType File -Force -Path "dist/Press Start UA Launcher/data/.keep" | Out-Null
+          Compress-Archive -Path "dist/Press Start UA Launcher" -DestinationPath "PressStartUA_Launcher_Windows_${{ env.VERSION }}.zip"
 
       - uses: actions/upload-artifact@v4
         with:
           name: PressStartUA_Launcher_Windows_${{ env.VERSION }}
-          path: PressStartUA_Launcher_Windows_${{ env.VERSION }}.zip
+          path: dist/
 
       - name: Release (tags only)
         if: startsWith(github.ref, 'refs/tags/')
