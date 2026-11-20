@@ -22,16 +22,21 @@ function Test-Start($dir, $exe) {
         -RedirectStandardOutput "$dir/../stdout.txt" -RedirectStandardError "$dir/../stderr.txt"
     if (!$p.WaitForExit(90000)) { $p.Kill(); Write-Host 'the exe hung' }
     Write-Host ("exit code: {0} (0x{1:X8})" -f $p.ExitCode, $p.ExitCode)
-    Get-Content "$dir/../stdout.txt", "$dir/../stderr.txt" -ErrorAction SilentlyContinue | Select-Object -Last 60
+    # Write-Host only: anything else would become part of the function's return value
+    Get-Content "$dir/../stdout.txt", "$dir/../stderr.txt" -ErrorAction SilentlyContinue |
+        Select-Object -Last 60 | ForEach-Object { Write-Host $_ }
     $log = "$dir/data/crash.log"
-    if (Test-Path $log) { Get-Content $log } else { Write-Host 'no crash.log' }
-    return (Test-Path $log) -and (Select-String -Path $log -Pattern 'selftest ok' -Quiet)
+    if (Test-Path $log) { Get-Content $log | ForEach-Object { Write-Host "crash.log: $_" } } else { Write-Host 'no crash.log' }
+    $ok = [bool]((Test-Path $log) -and (Select-String -Path $log -Pattern 'selftest ok' -Quiet))
+    Write-Host "started: $ok"
+    return $ok
 }
 
 pyinstaller @common --windowed --name $name app.py
 $dir = "dist/$name"
 & "$dir/_internal/wit/windows/wit.exe" --version
-if (!(Test-Start $dir "$name.exe")) {
+$started = Test-Start $dir "$name.exe"
+if (-not $started) {
     Write-Host '--- the windowed exe did not start; building a console copy to see why ---'
     pyinstaller @common --console --debug=imports --name debug app.py --distpath dist_debug
     Test-Start 'dist_debug/debug' 'debug.exe' | Out-Null
