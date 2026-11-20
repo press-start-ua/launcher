@@ -1,0 +1,65 @@
+# Builds the portable Windows version: a folder with «Press Start UA Launcher.exe», zipped.
+# Run by hand (Actions → Windows build → Run workflow) or by pushing a tag like v0.1.
+# The zip is kept as the run's artifact; for a tag it is also attached to a GitHub release.
+name: Windows build
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install build tools
+        run: python -m pip install PySide6-Essentials==6.10.3 pyinstaller==6.11.1
+
+      - name: Build
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path app.py -Pattern "^VERSION = '(.+)'").Matches[0].Groups[1].Value
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+          pyinstaller --noconfirm --clean --windowed --onedir `
+            --name "Press Start UA Launcher" `
+            --icon assets/icon.ico `
+            --add-data "assets/icon.png;assets" `
+            --add-data "catalog;catalog" `
+            --add-data "wit/windows;wit/windows" `
+            --add-data "wit/gpl-2.0.txt;wit" `
+            --add-data "wit/README.txt;wit" `
+            --exclude-module tkinter `
+            app.py
+          $out = "dist/Press Start UA Launcher"
+          Copy-Item packaging/README_Windows.txt "$out/README.txt"
+          Copy-Item LICENSE "$out/LICENSE.txt"
+          New-Item -ItemType Directory -Force -Path "$out/data" | Out-Null
+          Compress-Archive -Path $out -DestinationPath "PressStartUA_Launcher_Windows_$version.zip"
+
+      - name: Smoke test (the exe starts and the engine finds wit)
+        shell: pwsh
+        run: |
+          $exe = "dist/Press Start UA Launcher/Press Start UA Launcher.exe"
+          if (!(Test-Path $exe)) { throw "no exe" }
+          if (!(Test-Path "dist/Press Start UA Launcher/_internal/wit/windows/wit.exe")) { throw "no wit" }
+          & "dist/Press Start UA Launcher/_internal/wit/windows/wit.exe" --version
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PressStartUA_Launcher_Windows_${{ env.VERSION }}
+          path: PressStartUA_Launcher_Windows_${{ env.VERSION }}.zip
+
+      - name: Release (tags only)
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${{ github.ref_name }}" "PressStartUA_Launcher_Windows_${{ env.VERSION }}.zip" --title "Press Start UA Launcher ${{ env.VERSION }}" --notes "Портативна версія для Windows: розпакуйте і запустіть Press Start UA Launcher.exe."
