@@ -24,7 +24,7 @@ from PySide6.QtWidgets import (QApplication, QStyle, QStyledItemDelegate, QButto
 
 from uapatch import PatchError, read_patch
 from uapatch.apply import default_output, disc_id, patch_image, patch_riivolution
-from uapatch.catalog import Catalog, cache_dir
+from uapatch.catalog import Catalog, cache_dir, portable_dir
 
 import texts
 
@@ -315,7 +315,9 @@ class Window(QMainWindow):
         self.image = None
         self.image_id = None
         self.busy = False
-        self.settings = QSettings('PressStartUA', 'Launcher')
+        portable = portable_dir()
+        self.settings = (QSettings(os.path.join(portable, 'settings.ini'), QSettings.IniFormat) if portable
+                         else QSettings('PressStartUA', 'Launcher'))
         self.cover_w = self.int_setting('cover', COVER_DEFAULT, COVER_MIN, COVER_MAX)
         self.setWindowTitle(APP)
         self.resize(1060, 760)
@@ -617,6 +619,14 @@ class Window(QMainWindow):
         url = self.contact_link(self.current_game())
         if url:
             QDesktopServices.openUrl(url)
+
+    def closeEvent(self, e):
+        if self.busy and QMessageBox.question(
+                self, APP, 'Переклад ще триває. Закрити програму? Незавершений файл не збережеться.') \
+                != QMessageBox.Yes:
+            e.ignore()
+            return
+        e.accept()
 
     def show_library(self):
         if self.busy:
@@ -993,10 +1003,17 @@ def main():
         source = sys.argv[sys.argv.index('--catalog') + 1]
     app = QApplication(sys.argv)
     app.setApplicationName(APP)
+    icon_file = os.path.join(getattr(sys, '_MEIPASS', HERE), 'assets', 'icon.png')
+    if os.path.exists(icon_file):
+        app.setWindowIcon(QIcon(icon_file))
     app.setStyleSheet(STYLE)
     w = Window(source)
     w.show()
-    sys.exit(app.exec())
+    code = app.exec()
+    # a background download or patch may still run: leave at once instead of waiting for it
+    # (Qt aborts when a running QThread is destroyed at exit)
+    sys.stdout.flush()
+    os._exit(code)
 
 
 if __name__ == '__main__':

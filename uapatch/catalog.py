@@ -44,7 +44,31 @@ TIMEOUT = 30
 AGENT = 'PressStartUA/1'  # generic client name, nothing about the user
 
 
+def portable_dir():
+    """The «data» folder beside the program when it runs as the portable Windows build (or when
+    such a folder exists next to it), else None. A portable program leaves nothing in the system."""
+    import sys
+    if not getattr(sys, 'frozen', False):
+        return None
+    path = os.path.join(os.path.dirname(os.path.abspath(sys.executable)), 'data')
+    if platform.system() == 'Windows' or os.path.isdir(path):
+        try:
+            os.makedirs(path, exist_ok=True)
+            probe = os.path.join(path, '.write_test')
+            open(probe, 'w').close()
+            os.unlink(probe)
+            return path
+        except OSError:  # a read-only place (a CD, Program Files): fall back to the user folders
+            return None
+    return None
+
+
 def cache_dir():
+    portable = portable_dir()
+    if portable:
+        path = os.path.join(portable, 'cache')
+        os.makedirs(path, exist_ok=True)
+        return path
     if platform.system() == 'Windows':
         base = os.environ.get('LOCALAPPDATA') or os.path.expanduser('~')
     elif platform.system() == 'Darwin':
