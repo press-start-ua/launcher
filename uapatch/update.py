@@ -12,6 +12,7 @@ REPO = 'press-start-ua/launcher'
 LATEST = f'https://api.github.com/repos/{REPO}/releases/latest'
 RELEASES = f'https://github.com/{REPO}/releases'
 ISSUES = f'https://github.com/{REPO}/issues'
+TELEGRAM = 'https://t.me/press_start_ua'
 AGENT = 'PressStartUA/1'  # generic client name, nothing about the user
 TIMEOUT = 15
 

@@ -145,6 +145,7 @@ ICONS = {
             '<circle cx="12" cy="17.3" r=".6" fill="{c}"/>',
     'about': '<circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r=".6" fill="{c}"/>',
     'update': '<path d="M12 3v11"/><path d="M7.5 9.5L12 14l4.5-4.5"/><path d="M4 15v3a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-3"/>',
+    'telegram': '<path d="M21 4L3 11l6.5 2.5L18 7l-6.5 8 7 5L21 4z"/><path d="M9.5 13.5V20l3-3.3"/>',
     'bug': '<path d="M5 21V4"/><path d="M5 4h11l-2.5 4L16 12H5"/>',
     'one': '<rect x="7" y="5" width="10" height="14" rx="2"/>',
     'many': '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="9" rx="1.5"/>'
@@ -467,6 +468,8 @@ class Window(QMainWindow):
         self.act_update = act('update', 'Оновлення', lambda: self.check_update(True),
                               'Перевірити, чи вийшла нова версія програми')
         act('bug', 'Помилка?', self.report_bug, 'Повідомити про помилку')
+        act('telegram', 'Telegram', lambda: QDesktopServices.openUrl(QUrl(update.TELEGRAM)),
+            'Наш канал у Telegram: новини перекладів, питання, помилки')
         act('about', 'Про програму', self.show_about, 'Версія та ліцензії')
 
 
@@ -690,7 +693,7 @@ class Window(QMainWindow):
             lay.addSpacing(4)
             self.wip_sections.append((key, h, text))
 
-        self.wip_contact = QPushButton('✉  Зв\'язатися з автором')
+        self.wip_contact = QPushButton('Зв\'язатися з автором')
         self.wip_contact.setCursor(Qt.PointingHandCursor)
         self.wip_contact.clicked.connect(self.contact_author)
         lay.addWidget(self.wip_contact, 0, Qt.AlignLeft)
@@ -934,18 +937,15 @@ class Window(QMainWindow):
         box.setTextFormat(Qt.RichText)
         box.setText(texts.BUG_HOWTO.format(log=esc(LOG)))
         gh = box.addButton('Написати на GitHub', QMessageBox.AcceptRole)
-        mail_url = self.contact_link(None)
-        mail = box.addButton('Написати листом', QMessageBox.ActionRole) if mail_url else None
+        tg = box.addButton('Написати в Telegram', QMessageBox.ActionRole)
         folder = box.addButton('Відкрити папку з журналом', QMessageBox.ActionRole)
         box.addButton('Закрити', QMessageBox.RejectRole)
         box.exec()
         if box.clickedButton() is gh:
             QDesktopServices.openUrl(QUrl(issue))
-        elif mail and box.clickedButton() is mail:
-            url = QUrl(mail_url)
-            if url.scheme() == 'mailto':
-                url = QUrl(f'{mail_url}?subject={quote("Press Start UA Launcher: помилка")}&body={quote(body)}')
-            QDesktopServices.openUrl(url)
+        elif box.clickedButton() is tg:
+            QApplication.clipboard().setText(body.replace('**', ''))  # the template, to paste into the message
+            QDesktopServices.openUrl(QUrl(update.TELEGRAM))
         elif box.clickedButton() is folder:
             QDesktopServices.openUrl(QUrl.fromLocalFile(os.path.dirname(LOG)))
 
@@ -1064,7 +1064,12 @@ class Window(QMainWindow):
             text.setText(bullets(value) if isinstance(value, list) else esc(value or '').replace('\n', '<br>'))
             h.setVisible(bool(value))
             text.setVisible(bool(value))
-        self.wip_contact.setVisible(self.contact_link(g) is not None)
+        link = self.contact_link(g)
+        self.wip_contact.setVisible(link is not None)
+        if link is not None:
+            tg = link.host() in ('t.me', 'telegram.me')
+            self.wip_contact.setText('Написати автору в Telegram' if tg else 'Зв\'язатися з автором')
+            self.wip_contact.setIcon(icon('telegram' if tg else 'about', '#2f6f4f'))
 
     # -------------------------------------------------------------- image
 

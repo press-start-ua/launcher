@@ -27,7 +27,7 @@ catalog.json (format 1):
               "done": ["..."], "todo": ["..."], "notes": "..."}
     }
   ],
-  "contact": "mailto:press.start.ukraine@gmail.com"   «Зв'язатися з автором» (https or mailto)
+  "contact": "https://t.me/press_start_ua"   «Зв'язатися з автором» (https or mailto)
 }
 
 Paths are relative to the catalog, so the same catalog works from a local folder and from the

@@ -16,4 +16,5 @@ Press Start UA Launcher — портативна версія для Windows
 підтримується: перетворіть його на ISO в Dolphin («Convert File…»).
 
 Сторінка проєкту: https://github.com/press-start-ua/launcher
+Telegram: https://t.me/press_start_ua
 Ліцензія: GNU GPL v3 (LICENSE.txt). Wiimms ISO Tools: GNU GPL v2.

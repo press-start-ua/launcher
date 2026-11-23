@@ -68,6 +68,11 @@ python3 cli.py patch "Моя гра.iso" -f wbfs
 | `wit/` | Wiimms ISO Tools для macOS, Windows, Linux |
 | `fonts/` | шрифт Nunito для обкладинок |
 
+## Зв'язок
+
+- Новини перекладів і питання: [Telegram](https://t.me/press_start_ua)
+- Помилки: [Issues](https://github.com/press-start-ua/launcher/issues) або Telegram (кнопка «Помилка?» у програмі)
+
 ## Ліцензії
 
 - Код програми: GNU GPL v3 ([LICENSE](LICENSE)).
