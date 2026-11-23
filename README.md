@@ -20,7 +20,6 @@
 |---|---|---|---|
 | New Super Mario Bros. Wii | SMNP01 (Європа, Rev 2) | 0.9 | бета |
 | Donkey Kong Jungle Beat | R49E01 (США), R49P01 (Європа) | 1.1 | завершено |
-| LEGO Batman: The Videogame | — | — | у роботі |
 
 Актуальний список завжди в [catalog/catalog.json](catalog/catalog.json): програма читає його звідси
 під час запуску.
