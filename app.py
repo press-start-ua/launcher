@@ -72,6 +72,7 @@ from PySide6.QtWidgets import (QApplication, QStyle, QStyledItemDelegate, QButto
 from uapatch import PatchError, read_patch
 from uapatch.apply import default_output, disc_id, patch_image, patch_riivolution
 from uapatch.catalog import Catalog, cache_dir, portable_dir
+from uapatch import update
 
 import texts
 
@@ -105,6 +106,8 @@ QLabel#wiptitle { font-size: 20px; font-weight: 700; color: #2b2620; }
 QLabel#pct { font-size: 15px; font-weight: 700; color: #4a6fa5; min-width: 44px; }
 QProgressBar#wipbar { background: #e7e0d2; border-radius: 6px; height: 12px; }
 QProgressBar#wipbar::chunk { background: #4a6fa5; border-radius: 6px; }
+QFrame#banner { background: #e3eee6; border: 1px solid #b9d3c2; border-radius: 10px; }
+QLabel#bannertext { color: #1f4f37; font-size: 13px; }
 QLabel#title { font-size: 26px; font-weight: 700; color: #2b2620; }
 QLabel#meta { color: #7a6f60; font-size: 13px; }
 QLabel#h { font-size: 13px; font-weight: 700; color: #7a6f60; letter-spacing: 1px; }
@@ -141,6 +144,8 @@ ICONS = {
     'help': '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.6 2.6 0 0 1 5 .9c0 1.8-2.5 2.3-2.5 4"/>'
             '<circle cx="12" cy="17.3" r=".6" fill="{c}"/>',
     'about': '<circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r=".6" fill="{c}"/>',
+    'update': '<path d="M12 3v11"/><path d="M7.5 9.5L12 14l4.5-4.5"/><path d="M4 15v3a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-3"/>',
+    'bug': '<path d="M5 21V4"/><path d="M5 4h11l-2.5 4L16 12H5"/>',
     'one': '<rect x="7" y="5" width="10" height="14" rx="2"/>',
     'many': '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="9" rx="1.5"/>'
            '<rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
@@ -378,6 +383,8 @@ class Window(QMainWindow):
         self.pages.currentChanged.connect(self.on_page)
         self.on_page(0)
         self.load_catalog()
+        self.release = None
+        start(self, lambda w: update.latest_release(), self.on_release, lambda msg: None)
 
     def int_setting(self, key, default, lo, hi):
         try:
@@ -409,7 +416,7 @@ class Window(QMainWindow):
 
         self.act_open = act('open', 'Відкрити образ', self.pick_image,
                             'Вибрати образ гри: програма сама знайде для нього переклад')
-        self.act_reload = act('reload', 'Оновити', self.load_catalog, 'Завантажити свіжий список перекладів')
+        self.act_reload = act('reload', 'Оновити список', self.load_catalog, 'Завантажити свіжий список перекладів')
         bar.addSeparator()
 
         size = QWidget()
@@ -429,31 +436,21 @@ class Window(QMainWindow):
         big = QLabel()
         big.setPixmap(icon('one', '#7a6f60', 36).pixmap(18, 18))
         sl.addWidget(big)
+        size.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
         self.size_box = bar.addWidget(size)
         bar.addSeparator()
 
         act('settings', 'Налаштування', self.open_settings, 'Куди зберігати результат, формат, кеш')
         act('help', 'Довідка', lambda: self.show_text('Довідка', texts.HELP), 'Як отримати образ і як грати')
+        self.act_update = act('update', 'Оновлення', lambda: self.check_update(True),
+                              'Перевірити, чи вийшла нова версія програми')
+        act('bug', 'Помилка?', self.report_bug, 'Повідомити про помилку')
         act('about', 'Про програму', self.show_about, 'Версія та ліцензії')
 
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        bar.addWidget(spacer)
-        self.search = QLineEdit()
-        self.search.setPlaceholderText('Пошук…')
-        self.search.setClearButtonEnabled(True)
-        self.search.setFixedWidth(220)
-        self.search.textChanged.connect(self.filter_shelf)
-        box = QWidget()
-        bl = QHBoxLayout(box)
-        bl.setContentsMargins(0, 0, 8, 0)
-        bl.addWidget(self.search)
-        self.search_box = bar.addWidget(box)
 
     def on_page(self, index):
         """The shelf-only tools are hidden on a game page; nothing changes the catalog mid-patch."""
         self.size_box.setVisible(index == 0)
-        self.search_box.setVisible(index == 0)
 
     def set_cover_width(self, w):
         self.cover_w = w
@@ -478,7 +475,32 @@ class Window(QMainWindow):
         lay = QVBoxLayout(page)
         lay.setContentsMargins(24, 20, 24, 16)
         lay.setSpacing(12)
-        lay.addWidget(QLabel('Українські переклади ігор Wii', objectName='apptitle'))
+        top = QHBoxLayout()
+        top.addWidget(QLabel('Українські переклади ігор Wii', objectName='apptitle'))
+        top.addStretch(1)
+        self.search = QLineEdit()
+        self.search.setPlaceholderText('Пошук…')
+        self.search.setClearButtonEnabled(True)
+        self.search.setFixedWidth(240)
+        self.search.textChanged.connect(self.filter_shelf)
+        top.addWidget(self.search)
+        lay.addLayout(top)
+
+        self.banner = QFrame(objectName='banner')
+        bl = QHBoxLayout(self.banner)
+        bl.setContentsMargins(14, 10, 10, 10)
+        self.banner_text = QLabel('', objectName='bannertext')
+        self.banner_text.setWordWrap(True)
+        bl.addWidget(self.banner_text, 1)
+        get = QPushButton('Завантажити', objectName='go')
+        get.clicked.connect(self.open_release)
+        bl.addWidget(get)
+        hide = QPushButton('✕', objectName='back')
+        hide.setToolTip('Сховати')
+        hide.clicked.connect(self.banner.hide)
+        bl.addWidget(hide)
+        self.banner.hide()
+        lay.addWidget(self.banner)
 
         self.shelf = QListWidget(objectName='shelf')
         self.shelf.setViewMode(QListView.IconMode)
@@ -803,6 +825,80 @@ class Window(QMainWindow):
         ok.clicked.connect(d.accept)
         lay.addWidget(ok, 0, Qt.AlignCenter)
         d.exec()
+
+    # -------------------------------------------------------------- program updates
+
+    def on_release(self, rel, manual=False):
+        self.release = rel
+        newer = bool(rel) and update.is_newer(rel['version'], VERSION)
+        if newer:
+            self.banner_text.setText(f'<b>Вийшла нова версія програми: {esc(rel["version"])}</b> '
+                                     f'(у вас {VERSION}). Переклади оновлюються й без цього, '
+                                     'а нова версія програми додає можливості й виправлення.')
+            self.banner.show()
+            self.act_update.setText('Є оновлення!')
+        if not manual:
+            return
+        if newer:
+            notes = esc(rel['notes'] or '—').replace('\n', '<br>')
+            box = QMessageBox(self)
+            box.setWindowTitle(APP)
+            box.setTextFormat(Qt.RichText)
+            box.setText(f'<b>Вийшла версія {esc(rel["version"])}</b>'
+                        f'{" від " + esc(nice_date(rel["date"])) if rel["date"] else ""}. У вас {VERSION}.'
+                        f'<br><br>{notes}<br><br>' + texts.UPDATE_HOWTO)
+            get = box.addButton('Відкрити сторінку завантаження', QMessageBox.AcceptRole)
+            box.addButton('Пізніше', QMessageBox.RejectRole)
+            box.exec()
+            if box.clickedButton() is get:
+                self.open_release()
+        elif rel:
+            QMessageBox.information(self, APP, f'У вас остання версія програми: {VERSION}.')
+        else:
+            QMessageBox.information(self, APP, f'У вас версія {VERSION}. Новіших випусків поки немає.')
+
+    def check_update(self, manual=True):
+        self.act_update.setEnabled(False)
+
+        def done(rel):
+            self.act_update.setEnabled(True)
+            self.on_release(rel, manual)
+
+        def failed(msg):
+            self.act_update.setEnabled(True)
+            if manual:
+                QMessageBox.warning(self, APP, 'Не вдалося перевірити оновлення.\n\n' + msg)
+        start(self, lambda w: update.latest_release(), done, failed)
+
+    def open_release(self):
+        QDesktopServices.openUrl(QUrl((self.release or {}).get('url') or update.RELEASES))
+
+    def report_bug(self):
+        import platform
+        from urllib.parse import quote
+        g = self.current_game() if self.pages.currentIndex() == 1 else None
+        game = f'{g["title"]}' + (f' ({self.image_id})' if self.image_id else '') if g else ''
+        body = texts.BUG_TEMPLATE.format(version=VERSION, system=platform.platform(terse=True), game=game or '—')
+        issue = (f'{update.ISSUES}/new?title={quote("Помилка: ")}&body={quote(body)}')
+        box = QMessageBox(self)
+        box.setWindowTitle('Повідомити про помилку')
+        box.setTextFormat(Qt.RichText)
+        box.setText(texts.BUG_HOWTO.format(log=esc(LOG)))
+        gh = box.addButton('Написати на GitHub', QMessageBox.AcceptRole)
+        mail_url = self.contact_link(None)
+        mail = box.addButton('Написати листом', QMessageBox.ActionRole) if mail_url else None
+        folder = box.addButton('Відкрити папку з журналом', QMessageBox.ActionRole)
+        box.addButton('Закрити', QMessageBox.RejectRole)
+        box.exec()
+        if box.clickedButton() is gh:
+            QDesktopServices.openUrl(QUrl(issue))
+        elif mail and box.clickedButton() is mail:
+            url = QUrl(mail_url)
+            if url.scheme() == 'mailto':
+                url = QUrl(f'{mail_url}?subject={quote("Press Start UA Launcher: помилка")}&body={quote(body)}')
+            QDesktopServices.openUrl(url)
+        elif box.clickedButton() is folder:
+            QDesktopServices.openUrl(QUrl.fromLocalFile(os.path.dirname(LOG)))
 
     def show_about(self):
         self.show_text('Про програму', texts.about(APP, VERSION), 560, 520)
