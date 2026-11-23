@@ -60,7 +60,7 @@ try:  # native crashes (inside Qt) leave their trace in the log too
 except Exception:
     pass
 
-from PySide6.QtCore import QByteArray, QObject, QRectF, QSettings, QSize, Qt, QThread, QUrl, Signal
+from PySide6.QtCore import QByteArray, QObject, QRectF, QSettings, QSize, Qt, QThread, QUrl, Signal, Slot
 from PySide6.QtGui import QAction, QColor, QDesktopServices, QFont, QIcon, QPainter, QPainterPath, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (QApplication, QStyle, QStyledItemDelegate, QButtonGroup, QDialog, QDialogButtonBox,
@@ -336,16 +336,38 @@ class Worker(QObject):
             self.failed.emit('Непередбачена помилка:\n' + traceback.format_exc())
 
 
+class Relay(QObject):
+    """Lives in the GUI thread, so a worker's signals reach the callbacks there. A plain function
+    or lambda connected straight to a worker signal would run in the worker thread and touch
+    widgets from it, which aborts the program."""
+
+    def __init__(self, owner, on_done, on_failed, on_log, on_progress):
+        super().__init__(owner)
+        self.fns = on_done, on_failed, on_log, on_progress
+
+    @Slot(object)
+    def done(self, value): self.fns[0](value)
+
+    @Slot(str)
+    def failed(self, msg): self.fns[1](msg)
+
+    @Slot(str)
+    def log(self, text): self.fns[2] and self.fns[2](text)
+
+    @Slot(int, int)
+    def progress(self, done, total): self.fns[3] and self.fns[3](done, total)
+
+
 def start(owner, fn, on_done, on_failed, on_log=None, on_progress=None):
     thread, worker = QThread(owner), Worker(fn)
+    relay = Relay(owner, on_done, on_failed, on_log, on_progress)
     worker.moveToThread(thread)
     thread.started.connect(worker.run)
-    worker.done.connect(on_done)
-    worker.failed.connect(on_failed)
-    if on_log:
-        worker.log.connect(on_log)
-    if on_progress:
-        worker.progress.connect(on_progress)
+    worker.done.connect(relay.done, Qt.QueuedConnection)
+    worker.failed.connect(relay.failed, Qt.QueuedConnection)
+    worker.log.connect(relay.log, Qt.QueuedConnection)
+    worker.progress.connect(relay.progress, Qt.QueuedConnection)
+    thread.finished.connect(relay.deleteLater)
     for sig in (worker.done, worker.failed):
         sig.connect(thread.quit)
     thread.finished.connect(worker.deleteLater)
@@ -492,8 +514,8 @@ class Window(QMainWindow):
         self.banner_text = QLabel('', objectName='bannertext')
         self.banner_text.setWordWrap(True)
         bl.addWidget(self.banner_text, 1)
-        get = QPushButton('Завантажити', objectName='go')
-        get.clicked.connect(self.open_release)
+        get = QPushButton('Як оновити', objectName='go')
+        get.clicked.connect(self.show_update)
         bl.addWidget(get)
         hide = QPushButton('✕', objectName='back')
         hide.setToolTip('Сховати')
@@ -840,18 +862,7 @@ class Window(QMainWindow):
         if not manual:
             return
         if newer:
-            notes = esc(rel['notes'] or '—').replace('\n', '<br>')
-            box = QMessageBox(self)
-            box.setWindowTitle(APP)
-            box.setTextFormat(Qt.RichText)
-            box.setText(f'<b>Вийшла версія {esc(rel["version"])}</b>'
-                        f'{" від " + esc(nice_date(rel["date"])) if rel["date"] else ""}. У вас {VERSION}.'
-                        f'<br><br>{notes}<br><br>' + texts.UPDATE_HOWTO)
-            get = box.addButton('Відкрити сторінку завантаження', QMessageBox.AcceptRole)
-            box.addButton('Пізніше', QMessageBox.RejectRole)
-            box.exec()
-            if box.clickedButton() is get:
-                self.open_release()
+            self.show_update()
         elif rel:
             QMessageBox.information(self, APP, f'У вас остання версія програми: {VERSION}.')
         else:
@@ -872,6 +883,44 @@ class Window(QMainWindow):
 
     def open_release(self):
         QDesktopServices.openUrl(QUrl((self.release or {}).get('url') or update.RELEASES))
+
+    def show_update(self):
+        """The window with the new version, what is new, how to install it and a Download button.
+        The zip is downloaded by the browser; the program itself never downloads code."""
+        rel = self.release or {}
+        d = QDialog(self)
+        d.setWindowTitle('Оновлення програми')
+        d.resize(600, 560)
+        lay = QVBoxLayout(d)
+        lay.setContentsMargins(0, 0, 0, 14)
+        view = QTextBrowser()
+        view.setOpenExternalLinks(True)
+        view.setStyleSheet('QTextBrowser { border: none; background: #fffdf8; padding: 18px; font-size: 14px; }')
+        date = f' від {esc(nice_date(rel["date"]))}' if rel.get('date') else ''
+        notes = esc(rel.get('notes') or '').replace('\n', '<br>')
+        frozen = getattr(sys, 'frozen', False)
+        folder = os.path.dirname(sys.executable) if frozen else HERE
+        view.setHtml(texts.update_window(version=esc(rel.get('version', '')), current=VERSION, date=date,
+                                         notes=notes, folder=esc(folder), windows=frozen and sys.platform == 'win32'))
+        lay.addWidget(view, 1)
+        row = QHBoxLayout()
+        row.setContentsMargins(14, 0, 14, 0)
+        size = f' ({rel["size"] / 1048576:.0f} МБ)' if rel.get('size') else ''
+        get = QPushButton('Завантажити' + size, objectName='go')
+        get.clicked.connect(lambda: QDesktopServices.openUrl(QUrl(rel.get('zip') or rel.get('url') or update.RELEASES)))
+        row.addWidget(get)
+        page = QPushButton('Сторінка випуску')
+        page.clicked.connect(self.open_release)
+        row.addWidget(page)
+        here = QPushButton('Відкрити папку програми')
+        here.clicked.connect(lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(folder)))
+        row.addWidget(here)
+        row.addStretch(1)
+        close = QPushButton('Пізніше')
+        close.clicked.connect(d.reject)
+        row.addWidget(close)
+        lay.addLayout(row)
+        d.exec()
 
     def report_bug(self):
         import platform

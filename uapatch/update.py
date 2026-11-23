@@ -26,7 +26,7 @@ def is_newer(latest, current):
 
 
 def latest_release():
-    """-> {'version', 'url', 'notes', 'date'} of the newest published release, or None if the
+    """-> {'version', 'url', 'zip', 'size', 'notes', 'date'} of the newest published release, or None if the
     repository has none yet. Raises PatchError when GitHub cannot be reached."""
     req = urllib.request.Request(LATEST, headers={'User-Agent': AGENT, 'Accept': 'application/vnd.github+json'})
     try:
@@ -41,5 +41,11 @@ def latest_release():
     url = data.get('html_url') or RELEASES
     if not url.startswith('https://github.com/'):
         url = RELEASES
-    return dict(version=(data.get('tag_name') or '').lstrip('vV'), url=url,
+    zip_url, size = None, 0
+    for a in data.get('assets') or []:  # the portable Windows zip attached to the release
+        link = a.get('browser_download_url') or ''
+        if link.lower().endswith('.zip') and link.startswith(f'https://github.com/{REPO}/releases/download/'):
+            zip_url, size = link, a.get('size') or 0
+            break
+    return dict(version=(data.get('tag_name') or '').lstrip('vV'), url=url, zip=zip_url, size=size,
                 notes=(data.get('body') or '').strip(), date=(data.get('published_at') or '')[:10])
