@@ -50,25 +50,6 @@
       "version": "1.1",
       "date": "2026-11-12",
       "status": "done"
-    },
-    {
-      "id": "legobatman",
-      "title": "LEGO Batman: The Videogame",
-      "platform": "Wii",
-      "status": "wip",
-      "wip": {
-        "progress": 0,
-        "eta": "Кінець грудня 2026",
-        "updated": "2026-11-20",
-        "done": [
-          "Поки нічого: переклад щойно почався"
-        ],
-        "todo": [
-          "Усе: текст, шрифти, графіка"
-        ],
-        "notes": "Шукаю тестувальників."
-      },
-      "gametdb": "RLBEWR"
     }
   ],
   "updated": "2026-11-20",
