@@ -5,6 +5,15 @@
 
 ![Вікно програми](screenshot.png)
 
+## Завантажити
+
+**[Остання версія для Windows](https://github.com/press-start-ua/launcher/releases/latest)**:
+відкрийте сторінку, завантажте `PressStartUA_Launcher_Windows_<версія>.zip`, розпакуйте й
+запустіть `Press Start UA Launcher.exe`. Встановлювати нічого не треба.
+
+Усі версії: [Releases](https://github.com/press-start-ua/launcher/releases). Коли вийде нова,
+програма сама про це скаже.
+
 ## Ігри
 
 | Гра | Диски | Версія перекладу | Стан |
