@@ -77,7 +77,7 @@ from uapatch import update
 import texts
 
 APP = 'Press Start UA Launcher'
-VERSION = '0.1'
+VERSION = '0.11'
 # The live list is read from GitHub; the copy shipped with the program is the fallback when offline.
 ONLINE_CATALOG = 'https://raw.githubusercontent.com/press-start-ua/launcher/main/catalog/catalog.json'
 LOCAL_CATALOG = os.path.join(getattr(sys, '_MEIPASS', HERE), 'catalog', 'catalog.json')
