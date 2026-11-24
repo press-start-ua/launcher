@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Press Start UA — українські переклади ігор</title>
+<meta name="description" content="Фанатські переклади відеоігор українською: текст, шрифти, графіка. Накладіть переклад на власну копію гри просто в браузері.">
+<meta name="theme-color" content="#0b0f1a">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="stylesheet" href="style.css?v=14">
+<script>
+  // old links like index.html#dkjb open the game's own page
+  if (/^#[\w-]+$/.test(location.hash) && !['#games', '#how'].includes(location.hash)) location.replace('game.html?id=' + location.hash.slice(1));
+</script>
+</head>
+<body>
+<header class="nav"><div class="wrap">
+  <a class="logo" href="./"><img src="icon.png" alt="">Press Start <b>UA</b></a>
+  <nav><a href="#games">Ігри</a><a href="#how">Як пропатчити</a><a href="https://github.com/press-start-ua/launcher/releases/latest">Лаунчер</a><a data-contact href="https://t.me/press_start_ua">Telegram</a></nav>
+  <span class="sp"></span>
+  <a class="pill" href="https://github.com/press-start-ua/launcher">GitHub</a>
+</div></header>
+
+<main>
+  <section class="hero" id="hero"><div class="wrap">
+    <div>
+      <span class="kicker"><i></i>Фанатські переклади відеоігор</span>
+      <h1>Грайте українською</h1>
+      <p>Перекладаємо все: текст, шрифти, графіку. Накладіть переклад на власну копію гри просто в браузері, файл нікуди не надсилається.</p>
+      <div class="cta"><a class="btn y" id="feature-btn" href="#games">Обрати гру</a><a class="btn o" href="#games">Усі ігри</a></div>
+      <div class="stats" id="stats"></div>
+    </div>
+    <a class="feature" id="feature" hidden></a>
+  </div></section>
+
+  <section class="sec" id="games"><div class="wrap">
+    <h2>Ігри</h2>
+    <p class="sub">Готові переклади й ті, над якими працюємо зараз.</p>
+    <p class="sub" id="state">Завантажуємо список ігор…</p>
+    <ul class="shelf" id="shelf" aria-live="polite"></ul>
+  </div></section>
+
+  <section class="sec" id="how"><div class="wrap">
+    <h2>Як пропатчити</h2>
+    <p class="sub">Три кроки, без програм і реєстрації.</p>
+    <div class="how">
+      <div class="step"><div class="n">01</div><h3>Оберіть гру</h3><p>На сторінці гри: версія перекладу, що нового і які диски підходять.</p></div>
+      <div class="step"><div class="n">02</div><h3>Додайте свій образ</h3><p>Перетягніть файл гри. Ми перевіримо, що це та сама версія і вона не змінена.</p></div>
+      <div class="step"><div class="n">03</div><h3>Заберіть результат</h3><p>Готовий файл для консолі чи емулятора: формат підкажемо на сторінці гри.</p></div>
+    </div>
+  </div></section>
+</main>
+
+<footer><div class="wrap">
+  <span>Press Start UA · українські переклади ігор · код <a href="https://github.com/press-start-ua/launcher">GPL-3.0-or-later</a></span>
+  <span>Фанатський проєкт, не пов'язаний із власниками ігор; назви ігор, логотипи й торгові марки належать їхнім власникам</span>
+  <span>Обкладинки: <a href="https://www.gametdb.com/">GameTDB</a> · Шрифти: Inter, Russo One, IBM Plex Mono (OFL) · <span id="updated"></span></span>
+</div></footer>
+
+<script src="common.js?v=14"></script>
+<script src="home.js?v=14"></script>
+</body>
+</html>

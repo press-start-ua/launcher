@@ -54,6 +54,9 @@ def main():
         game = dict(id=o.id, title=title, platform=o.platform, discs=[])
         cat['games'].append(game)
     if game.get('version') != head['version']:
+        if game.get('version'):  # the site shows earlier versions under «Історія версій»
+            game.setdefault('history', []).insert(0, dict(
+                version=game['version'], date=game.get('date', ''), changes=game.get('changes', [])))
         game['changes'] = []
     game.update(title=title, version=head['version'], date=o.date)
     if o.status:

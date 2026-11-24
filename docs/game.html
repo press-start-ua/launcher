@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Press Start UA</title>
+<meta name="description" content="Український переклад гри: версія, що нового, і патч просто в браузері.">
+<meta name="theme-color" content="#0b0f1a">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="stylesheet" href="style.css?v=14">
+</head>
+<body>
+<header class="nav"><div class="wrap">
+  <a class="logo" href="./"><img src="icon.png" alt="">Press Start <b>UA</b></a>
+  <nav><a href="./#games">Ігри</a><a href="./#how">Як пропатчити</a><a href="https://github.com/press-start-ua/launcher/releases/latest">Лаунчер</a><a data-contact href="https://t.me/press_start_ua">Telegram</a></nav>
+  <span class="sp"></span>
+  <a class="pill" href="https://github.com/press-start-ua/launcher">GitHub</a>
+</div></header>
+
+<main id="main">
+  <section class="ghero" id="ghero"><div class="grid8"></div><div class="wrap">
+    <div class="crumbs"><a href="./#games">← Усі ігри</a></div>
+    <div id="g-cover"></div>
+    <div class="info">
+      <h1 id="g-title">Завантажуємо…</h1>
+      <p class="orig" id="g-orig" hidden></p>
+      <div class="chips" id="g-chips"></div>
+      <p class="lede" id="g-about" hidden></p>
+      <div class="acts" id="g-acts"></div>
+    </div>
+    <div class="facts" id="g-facts" hidden></div>
+  </div></section>
+
+  <div class="wrap cols" id="g-cols" hidden>
+    <div id="g-left"></div>
+    <div>
+      <!-- the patcher: all work happens in worker.js, on the player's computer -->
+      <section class="panel patch" id="patch" hidden>
+        <h2 class="t">Перекласти свою гру</h2>
+        <p class="sub">Усе робиться у вашому браузері.</p>
+        <div class="stp on" id="s1"><div class="n">1</div><div>
+          <h3>Образ гри</h3>
+          <label class="drop" id="p-drop"><input type="file" id="p-file" accept=".rvz,.wia"><span id="p-droptext">Оберіть або перетягніть сюди образ <b>.rvz</b></span></label>
+          <p class="found" id="p-found" hidden></p>
+        </div></div>
+        <div class="stp" id="s2"><div class="n">2</div><div>
+          <h3>Формат</h3>
+          <fieldset class="opts" id="p-formats">
+            <legend class="sr">Формат результату</legend>
+            <label class="opt"><input type="radio" name="fmt" value="wbfs" checked><div><b>WBFS</b><small>Wii з USB Loader GX, WiiFlow; Dolphin</small></div><em>зайняте місце</em></label>
+            <label class="opt"><input type="radio" name="fmt" value="iso"><div><b>ISO</b><small>Повний образ для Dolphin</small></div><em>4,7 ГБ</em></label>
+            <label class="opt"><input type="radio" name="fmt" value="riiv"><div><b>Riivolution</b><small>Файли для SD-картки, гра лишається оригінальною</small></div><em>кілька МБ</em></label>
+          </fieldset>
+        </div></div>
+        <div class="stp" id="s3"><div class="n">3</div><div>
+          <h3>Пропатчити</h3>
+          <button class="btn y" id="p-go" type="button" disabled>Пропатчити</button>
+          <button class="btn o" id="p-cancel" type="button" hidden>Скасувати</button>
+          <div class="hp big" id="p-barwrap" hidden><i id="p-bar" style="width:0"></i></div>
+          <p class="stage" id="p-stage"></p>
+          <div class="result" id="p-result" hidden></div>
+          <details id="p-logwrap" hidden><summary>Журнал</summary><pre id="p-log"></pre></details>
+        </div></div>
+        <p class="safe">🔒 Образ не залишає ваш комп'ютер. Потрібна ваша власна копія гри.
+          Маєте ISO чи WBFS? У Dolphin: правий клік по грі → «Конвертувати файл…» → RVZ.
+          Або <a href="https://github.com/press-start-ua/launcher/releases/latest">лаунчер для Windows</a>: він бере ISO та WBFS напряму.</p>
+      </section>
+      <section class="panel patch" id="follow" hidden>
+        <h2 class="t">Слідкуйте за перекладом</h2>
+        <p class="sub">Новини й тестові версії в Telegram.</p>
+        <a class="btn y" data-contact href="https://t.me/press_start_ua">Написати в Telegram</a>
+      </section>
+    </div>
+  </div>
+</main>
+
+<footer><div class="wrap">
+  <span>Press Start UA · українські переклади ігор · код <a href="https://github.com/press-start-ua/launcher">GPL-3.0-or-later</a></span>
+  <span>Фанатський проєкт, не пов'язаний із власниками ігор; назви ігор, логотипи й торгові марки належать їхнім власникам</span>
+  <span>Обкладинки: <a href="https://www.gametdb.com/">GameTDB</a> · Шрифти: Inter, Russo One, IBM Plex Mono (OFL)</span>
+</div></footer>
+
+<script src="common.js?v=14"></script>
+<script src="game.js?v=14"></script>
+</body>
+</html>

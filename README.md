@@ -14,6 +14,10 @@
 Усі версії: [Releases](https://github.com/press-start-ua/launcher/releases). Коли вийде нова,
 програма сама про це скаже.
 
+**Без встановлення, у браузері:** <https://press-start-ua.github.io/launcher/>. Сторінка показує ті самі
+ігри й накладає переклад на ваш образ **RVZ** (формат Dolphin) просто в браузері: файл нікуди не
+надсилається. Результат: WBFS, ISO або Riivolution.
+
 ## Ігри
 
 | Гра | Диски | Версія перекладу | Стан |
@@ -70,8 +74,11 @@ python3 cli.py patch "Моя гра.iso" -f wbfs
 | `app.py`, `texts.py` | вікно програми (PySide6) і тексти довідки |
 | `cli.py` | те саме з командного рядка |
 | `uapatch/` | рушій: формат патча, застосування через wit, список перекладів |
+| `docs/` | сайт (GitHub Pages): головна `index.html`, сторінка гри `game.html?id=…` з патчером у браузері; `docs/engine/` читає RVZ/WIA, накладає `.uapatch`, пише ISO/WBFS |
+| `tests/` | перевірки веб-рушія в Node (порівняння з Python і wit) |
 | `catalog/` | список перекладів, патчі, обкладинки |
 | `tools/import_patch.py` | додати новий переклад або версію до списку |
+| `tools/make_icon.py` | малює іконку програми й сайту (вільний шрифт Russo One) |
 | `tools/make_cover.py` | зробити обкладинку з українського логотипа гри (якщо немає скану коробки) |
 | `wit/` | Wiimms ISO Tools для macOS, Windows, Linux |
 | `fonts/` | шрифт Nunito для обкладинок |
@@ -83,9 +90,12 @@ python3 cli.py patch "Моя гра.iso" -f wbfs
 
 ## Ліцензії
 
-- Код програми: GNU GPL v3 ([LICENSE](LICENSE)).
+- Код програми й сайту: GNU GPL v3 або новіша (GPL-3.0-or-later, [LICENSE](LICENSE)).
 - **Wiimms ISO Tools (wit)** © Dirk Clemens, GNU GPL v2 ([wit/gpl-2.0.txt](wit/gpl-2.0.txt)),
   вихідний код: <https://wit.wiimm.de>, див. [wit/README.txt](wit/README.txt).
 - **Qt for Python (PySide6)**: GNU LGPL v3.
 - **Nunito**: SIL Open Font License 1.1 ([fonts/Nunito-OFL.txt](fonts/Nunito-OFL.txt)).
+- Шрифти сайту **Inter**, **Russo One**, **IBM Plex Mono**: SIL Open Font License 1.1 (ліцензії в [docs/fonts/](docs/fonts/)).
+- **fzstd** (розпакування Zstandard на сайті) © Arjun Barrett, MIT ([docs/engine/vendor/fzstd-LICENSE.txt](docs/engine/vendor/fzstd-LICENSE.txt)).
+- Формат RVZ/WIA описано за документацією Dolphin (`docs/WiaAndRvz.md`). Обкладинки на сайті з [GameTDB](https://www.gametdb.com/).
 - Усі шрифти в самих перекладах вільні (SIL Open Font License), перелічені в README кожного перекладу.

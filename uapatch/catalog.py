@@ -16,6 +16,11 @@ catalog.json (format 1):
       "status": "beta",                    optional badge: "wip" (У РОБОТІ), "beta" (БЕТА), "done" (ЗАВЕРШЕНО)
       "contact": "https://...",            optional, overrides the catalog-wide "contact" link
       "gametdb": "SMNP01",                 optional: whose box art to show (default: the first disc)
+      "short": "Mario",                    optional, the site: short name for buttons («Перекласти Mario»)
+      "title_uk": "Нові Супер Брати Маріо Wii",  optional, the site: the Ukrainian name, shown as text
+      "about": "...",                      optional, the site: one or two sentences about the translation
+      "stats": [["Текст", "100%"], ...],   optional, the site: what is translated (a % draws a bar)
+      "history": [{"version", "date", "changes"}],  earlier versions, newest first (import_patch.py adds them)
       "discs": [
         {"game": "SMNP01", "region": "Європа", "note": "Rev 2",
          "patch": "patches/nsmbw_SMNP01_0.9.uapatch", "sha256": "...", "size": 252016}
