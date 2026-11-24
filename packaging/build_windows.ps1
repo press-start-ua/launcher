@@ -48,4 +48,7 @@ New-Item -ItemType Directory -Force -Path "$dir/data" | Out-Null
 New-Item -ItemType File -Force -Path "$dir/data/.keep" | Out-Null
 Copy-Item packaging/README_Windows.txt "$dir/README.txt"
 Copy-Item LICENSE "$dir/LICENSE.txt"
+# third-party licences and the source offer (licenses/README.txt): wit, Cygwin, OpenSSL, ncurses, zlib, Qt, Python
+Copy-Item licenses "$dir/licenses" -Recurse
+Copy-Item wit/gpl-2.0.txt "$dir/licenses/wit-GPL-2.0.txt"
 Compress-Archive -Path $dir -DestinationPath "PressStartUA_Launcher_Windows_$version.zip" -Force

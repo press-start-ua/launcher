@@ -4,3 +4,5 @@ __pycache__/
 .DS_Store
 # private working notes
 AGENTS.md
+# source archives of wit and Cygwin kept for the written offer (licenses/README.txt)
+packaging/sources/

@@ -9,3 +9,4 @@ https://wit.wiimm.de (download page) and https://github.com/Wiimm/wiimms-iso-too
   linux/    wit for Linux
 
 The launcher runs wit as a separate program to read and write Wii disc images.
+All licence texts, exact source links and our written offer for the source: ../licenses/README.txt

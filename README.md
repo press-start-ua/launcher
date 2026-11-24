@@ -91,6 +91,8 @@ python3 cli.py patch "Моя гра.iso" -f wbfs
 ## Ліцензії
 
 - Код програми й сайту: GNU GPL v3 або новіша (GPL-3.0-or-later, [LICENSE](LICENSE)).
+- Сторонні програми у версії для Windows (wit, Cygwin, OpenSSL, ncurses, zlib, Qt, Python), їхні ліцензії,
+  посилання на вихідний код і письмова пропозиція: [licenses/README.txt](licenses/README.txt).
 - **Wiimms ISO Tools (wit)** © Dirk Clemens, GNU GPL v2 ([wit/gpl-2.0.txt](wit/gpl-2.0.txt)),
   вихідний код: <https://wit.wiimm.de>, див. [wit/README.txt](wit/README.txt).
 - **Qt for Python (PySide6)**: GNU LGPL v3.

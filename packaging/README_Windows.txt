@@ -12,9 +12,10 @@ Press Start UA Launcher — портативна версія для Windows
 Налаштування і завантажені патчі програма зберігає поруч із собою, у папці «data».
 Щоб видалити програму, просто видаліть її папку.
 
-Для перекладу потрібна ваша власна копія гри (образ ISO, WBFS…). RVZ поки не
-підтримується: перетворіть його на ISO в Dolphin («Convert File…»).
+Для перекладу потрібна ваша власна копія гри (образ ISO, WBFS…). Образ RVZ можна
+пропатчити просто в браузері: https://press-start-ua.github.io/launcher/
 
 Сторінка проєкту: https://github.com/press-start-ua/launcher
 Telegram: https://t.me/press_start_ua
-Ліцензія: GNU GPL v3 (LICENSE.txt). Wiimms ISO Tools: GNU GPL v2.
+Ліцензія: GNU GPL v3 або новіша (LICENSE.txt). Сторонні програми (wit, Cygwin, Qt, Python…)
+і їхні ліцензії та вихідний код: папка licenses, файл README.txt.
